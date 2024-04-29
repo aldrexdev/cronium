@@ -1,0 +1,5 @@
+backend/go.sum
+backend/go.mod
+backend/.env
+frontEnd/.vscode/settings.json
+backend/.vscode/settings.json

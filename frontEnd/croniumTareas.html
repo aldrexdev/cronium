@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.png" type="image/png">
+    <title>Cronium - Tareas</title>
+    <style>
+        /* Ocultar la barra de desplazamiento vertical */
+        ::-webkit-scrollbar {
+            width: 0.5em;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background-color: transparent;
+            border: none;
+        }
+
+        #contenedorGridTareasNoCompletadas {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            row-gap: 20px;
+            column-gap: 20px;
+        }
+
+        #contenedorGridTareasCompletadas {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            row-gap: 20px;
+            column-gap: 20px;
+        }
+
+        .textoRecortadoNoCompletada {
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            line-height: 1.2em;
+            /* Altura de línea del texto */
+            height: 2.4em;
+        }
+
+        .textoRecortadoCompletada {
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            line-height: 1.2em;
+            /* Altura de línea del texto */
+            height: 2.4em;
+        }
+
+        .btnMostrarMas {
+            background-color: none;
+            border: none;
+            margin-bottom: 20px;
+            color: blueviolet;
+            cursor: pointer;
+        }
+
+        #contenedorFlexCreacionTareas {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #buttonFlexCreacionTareas {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            color: blueviolet;
+            font-weight: bold;
+        }
+
+        .divTareas {
+            border: 1px solid black;
+            border-radius: 5px;
+            text-align: center;
+            box-shadow: 2px 2px 8px 3px rgb(144, 105, 180);
+            background-color: rgb(242, 239, 245);
+        }
+
+        h2 {
+            text-align: center;
+        }
+
+        /*Parte modal crear*/
+        .modal {
+            display: none;
+            /* La modal está oculta por defecto */
+            position: fixed;
+            /* Se queda fija en la pantalla */
+            z-index: 1;
+            /* Se sitúa sobre los demás elementos */
+            left: 0;
+            top: 0;
+            width: 100%;
+            /* Ancho completo */
+            height: 100%;
+            /* Alto completo */
+            overflow: auto;
+            /* Si es necesario, se añade scroll */
+            background-color: rgb(0, 0, 0);
+            /* Color de fondo */
+            background-color: rgba(0, 0, 0, 0.4);
+            /* Negro con opacidad */
+        }
+
+        /* Contenido de la modal*/
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            /* 15% desde arriba y centrado horizontalmente */
+            border: 1px solid #888;
+            width: 40%;
+            border-radius: 25px;
+            /* Ancho del contenido de la modal */
+        }
+
+        /* Botón para cerrar la modal */
+        #closeCrearTarea {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            padding-right: 15px;
+            padding-top: 5px;
+            font-weight: bold;
+        }
+
+        #closeCrearTarea:hover,
+        #closeCrearTarea:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        #closeEditarTarea {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            padding-right: 15px;
+            padding-top: 5px;
+            font-weight: bold;
+        }
+
+        #closeEditarTarea:hover,
+        #closeEditarTarea:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        #closeBorrarTarea {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            padding-right: 15px;
+            padding-top: 5px;
+            font-weight: bold;
+        }
+
+        #closeBorrarTarea:hover,
+        #closeBorrarTarea:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        #closeMostrarMas {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            padding-right: 15px;
+            padding-top: 5px;
+            font-weight: bold;
+        }
+
+        #closeMostrarMas:hover,
+        #closeMostrarMas:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        #closeEditarTask {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            padding-right: 15px;
+            padding-top: 5px;
+            font-weight: bold;
+        }
+
+        #closeEditarTask:hover,
+        #closeEditarTask:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        /* Cuerpo de la modal */
+        .modal-body {
+            padding: 2px 16px;
+            text-align: center;
+        }
+
+        /*inputs y botón crear*/
+
+        #taskNameCreate,
+        #taskDescriptionCreate {
+            width: 100%;
+            /* Ancho completo para ocupar el contenedor */
+            padding: 10px;
+            /* Espaciado interno para que el texto no esté justo en el borde */
+            margin: 8px 0;
+            /* Margen exterior para separar del resto de elementos */
+            display: inline-block;
+            /* Permite que el elemento sea en bloque pero respetando el ancho definido */
+            border: 1px solid blueviolet;
+            /* Borde del color deseado */
+            border-radius: 4px;
+            /* Bordes redondeados para un aspecto más suave */
+            box-sizing: border-box;
+            /* Para que el padding y el borde no aumenten el ancho */
+        }
+
+        #taskNameCreate:focus,
+        #taskDescriptionCreate:focus {
+            outline: none;
+            /* Elimina el borde de enfoque predeterminado */
+            border-color: blueviolet;
+            /* Cambia el color del borde al enfocarse, puedes ajustar este color como desees */
+            box-shadow: 0 0 8px 0 blueviolet;
+            /* Sombra exterior para resaltar el elemento enfocado */
+        }
+
+        #taskDescriptionCreate {
+            height: 150px;
+            /* Altura fija para el textarea */
+            resize: vertical;
+            /* Permite al usuario cambiar el tamaño del textarea solo verticalmente */
+        }
+
+        .tareasCount{
+            color: red;
+            text-decoration: underline;
+        }
+
+        #taskNameEdit,
+        #taskDescriptionEdit {
+            width: 100%;
+            /* Ancho completo para ocupar el contenedor */
+            padding: 10px;
+            /* Espaciado interno para que el texto no esté justo en el borde */
+            margin: 8px 0;
+            /* Margen exterior para separar del resto de elementos */
+            display: inline-block;
+            /* Permite que el elemento sea en bloque pero respetando el ancho definido */
+            border: 1px solid blueviolet;
+            /* Borde del color deseado */
+            border-radius: 4px;
+            /* Bordes redondeados para un aspecto más suave */
+            box-sizing: border-box;
+            /* Para que el padding y el borde no aumenten el ancho */
+        }
+
+        #taskNameEdit:focus,
+        #taskDescriptionEdit:focus {
+            outline: none;
+            /* Elimina el borde de enfoque predeterminado */
+            border-color: blueviolet;
+            /* Cambia el color del borde al enfocarse, puedes ajustar este color como desees */
+            box-shadow: 0 0 8px 0 blueviolet;
+            /* Sombra exterior para resaltar el elemento enfocado */
+        }
+
+        #taskDescriptionEdit {
+            height: 150px;
+            /* Altura fija para el textarea */
+            resize: vertical;
+            /* Permite al usuario cambiar el tamaño del textarea solo verticalmente */
+        }
+
+
+        #contenidoMostrarMas {
+            overflow-wrap: break-word;
+        }
+
+        #tituloMostrarMás {
+            overflow-wrap: break-word;
+        }
+
+        /* Estilo para el botón */
+        .botonesEstilos {
+            background-color: blueviolet;
+            /* Color de fondo blueviolet */
+            color: white;
+            /* Texto en color blanco para contraste */
+            padding: 15px 30px;
+            /* Espaciado interno para hacer el botón más grande */
+            border: none;
+            /* Sin borde */
+            text-align: center;
+            /* Alineación del texto al centro */
+            text-decoration: none;
+            /* Sin subrayado */
+            display: inline-block;
+            /* Asegurarse de que se puede aplicar margen */
+            font-size: 16px;
+            /* Tamaño del texto */
+            margin: 4px 2px;
+            /* Margen exterior para separar del resto de elementos */
+            cursor: pointer;
+            /* Cambiar el cursor a una mano al pasar por encima */
+            border-radius: 5px;
+            /* Bordes ligeramente redondeados */
+            transition: background-color 0.3s, box-shadow 0.3s;
+            /* Transiciones suaves para el fondo y la sombra */
+        }
+
+        /* Estilo para cuando se pasa el cursor sobre el botón */
+        .botonesEstilos:hover {
+            background-color: rgb(99, 31, 163);
+            /* Oscurecer el color blueviolet al pasar el cursor */
+            box-shadow: 0 4px 8px 0 rgba(138, 43, 226, 0.2), 0 6px 20px 0 rgba(138, 43, 226, 0.19);
+            /* Sombra exterior para resaltar */
+        }
+
+        .controlTexto {
+            overflow-wrap: break-word;
+        }
+
+        .material-symbols-outlined{
+            transition: color 0.3s;
+        }
+
+        .material-symbols-outlined:hover{
+            color: blueviolet;
+        }
+
+        /*Estilos checkbox completado*/
+
+        .checkBoxCompletado {
+            appearance: none;
+            cursor: pointer;
+            background-color: #fff;
+            width: 25px;
+            height: 25px;
+            border-radius: 5px;
+            position: relative;
+            border: 2px solid #888;
+            transition: all 0.3s ease-in-out;
+        }
+
+        .checkBoxCompletado:checked {
+            background-color: #fff;
+        }
+
+        .checkBoxCompletado {
+            transition: all 0.3s ease-in-out;
+        }
+
+        .lineaSeparadora {
+            width: 2px;
+            background-color: #000;
+            align-self: stretch;
+        }
+
+        .checkBoxCompletado:checked:after {
+            content: '\2713';
+            /* Código Unicode para la palomita */
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%) scale(1.4);
+            /* Ajusta la escala para cambiar el tamaño de la palomita */
+            font-size: 30px;
+            /* Aumenta el tamaño de la fuente para hacer la palomita más grande */
+            color: blueviolet;
+            /* Color de la palomita */
+            /* Ajustes adicionales para posicionar la palomita para que sobresalga */
+            margin-left: 3px;
+            /* Ajusta según sea necesario para posicionar horizontalmente */
+            margin-top: -4px;
+        }
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        #inputPaginaNoCompletadas,
+        #inputPaginaCompletadas {
+            /* Ancho completo para ocupar el contenedor */
+            padding: 10px;
+            width: 50px;
+            /* Espaciado interno para que el texto no esté justo en el borde */
+            margin: 8px 0;
+            text-align: center;
+            /* Permite que el elemento sea en bloque pero respetando el ancho definido */
+            border: 1px solid blueviolet;
+            /* Borde del color deseado */
+            border-radius: 4px;
+            /* Bordes redondeados para un aspecto más suave */
+            box-sizing: border-box;
+        }
+
+        #paginadorNoCompletadas {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            color: blueviolet;
+            font-weight: bold;
+        }
+
+        #paginadorCompletadas {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            color: blueviolet;
+            font-weight: bold;
+        }
+
+        #btnSiguienteCompletadas,
+        #btnSiguienteNoCompletadas,
+        #btnAnteriorNoCompletadas,
+        #btnAnteriorCompletadas{
+            background-color: transparent;
+            border: none;
+            font-size: 30px;
+            color: blueviolet;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="header"></div>
+
+    <div id="contenedorTareas">
+        <div style="display: flex; align-items: center; justify-content: start;"> <span
+                class="material-symbols-outlined" id="botonVolverAtras"
+                style="color: rgb(99, 31, 163); cursor: pointer; font-size: 35px; padding-left: 10px;">
+                arrow_back
+            </span>
+            <h1 id="insertarNombreProyecto" style="margin-left: 30px; color: black;"></h1>
+        </div>
+
+        <div id="contenedorFlexCreacionTareas">
+
+            <button id="buttonFlexCreacionTareas"><span class="material-symbols-outlined"
+                    style="font-size: 30px;">add</span>
+                <p style="font-size: 15px;">Crear Tarea</p>
+            </button>
+        </div>
+
+        <h2>Listado de Tareas</h2>
+
+        <div style="display: flex; justify-content: space-around; align-items: flex-start;">
+            <div id="paginadorNoCompletadas">
+                <button id="btnAnteriorNoCompletadas"><span style="font-size: 35px; cursor: pointer;" class="material-symbols-outlined">
+                    line_start_arrow_notch
+                    </span></button>
+                <input type="number" id="inputPaginaNoCompletadas" min="1" value="1">
+                <button  id="btnSiguienteNoCompletadas"><span style="font-size: 35px; cursor: pointer;" class="material-symbols-outlined">
+                    line_end_arrow_notch
+                    </span></button>
+            </div>
+
+            <div id="paginadorCompletadas">
+                <button id="btnAnteriorCompletadas"><span style="font-size: 35px; cursor: pointer;" class="material-symbols-outlined">
+                    line_start_arrow_notch
+                    </span></button>
+                <input type="number" id="inputPaginaCompletadas" min="1" value="1">
+                <button id="btnSiguienteCompletadas"><span style="font-size: 35px; cursor: pointer;" class="material-symbols-outlined">
+                    line_end_arrow_notch
+                    </span></button>
+            </div>
+        </div>
+        <div style="display: flex; justify-content: space-around; align-items: flex-start;">
+            <div id="contenedorGridTareasNoCompletadas" style="flex: 0 0 48%;">
+
+            </div>
+            <div class="lineaSeparadora"></div>
+
+            <div id="contenedorGridTareasCompletadas" style="flex: 0 0 48%;">
+
+
+            </div>
+        </div>
+
+        <div id="modalCrearTarea" class="modal">
+
+            <!-- Contenido de la modal -->
+            <div class="modal-content">
+                <span id="closeCrearTarea">&times;</span>
+                <div class="modal-header">
+                    <h2>Crear Tarea</h2>
+                </div>
+                <div class="modal-body">
+                    <input type="text" id="taskNameCreate" name="taskNameCreate"
+                        placeholder="Nombre de la Tarea"><br><br>
+
+                    <textarea id="taskDescriptionCreate" name="taskDescriptionCreate"
+                        placeholder="Descripción de la Tarea"></textarea><br><br>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px; margin-top: 15px;">
+                        <button class="botonesEstilos" id="btnCancelarCreateTask">Cancelar</button>
+                        <button class="botonesEstilos" id="btnCreateTask">Crear Tarea</button>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+        <div id="modalEditarTarea" class="modal">
+
+            <!-- Contenido de la modal -->
+            <div class="modal-content">
+                <span id="closeEditarTarea">&times;</span>
+                <div class="modal-header">
+                    <h2>Actualizar Tarea</h2>
+                </div>
+                <div class="modal-body">
+                    <input type="text" id="taskNameEdit" name="taskNameEdit" placeholder="Nombre de la Tarea"><br><br>
+
+                    <textarea id="taskDescriptionEdit" name="taskDescriptionEdit"
+                        placeholder="Descripción de la Tarea"></textarea><br><br>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px; margin-top: 15px;">
+                        <button class="botonesEstilos" id="btnCancelarEditTask">Cancelar</button>
+                        <button class="botonesEstilos" id="btnEditTask">Editar tarea</button>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+        <div id="modalBorrarTarea" class="modal">
+            <div class="modal-content">
+                <span id="closeBorrarTarea">&times;</span>
+                <div class="modal-header">
+                    <h2>Borrar Tarea</h2>
+                </div>
+                <div class="modal-body">
+                    <p style="color: red; font-weight: bold;">¿Estas seguro de que deseas borrar esta Tarea?</p>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px; margin-top: 15px;">
+                        <button class="botonesEstilos" id="btnCancelarDeleteTask">Cancelar</button>
+                        <button class="botonesEstilos" id="btnAceptarDeleteTask">Borrar tarea</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div id="modalMostrarMas" class="modal">
+            <div class="modal-content">
+                <span id="closeMostrarMas">&times;</span>
+                <div class="modal-header">
+                    <h2 id="tituloMostrarMás"></h2>
+                </div>
+                <div class="modal-body">
+                    <p id="contenidoMostrarMas"></p>
+                    <div style="display: flex; justify-content: center; margin-bottom: 15px; margin-top: 15px;">
+                        <button class="botonesEstilos" id="btnAceptarMostrarMas">Aceptar</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</body>
+<script src="loadScriptsTareas.js"></script>
+</html>
